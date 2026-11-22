@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import aiRouter from "@/routes/ai.route";
 import bookRouter from "@/routes/book.route";
 import { errorMiddleware } from "@/middlewares/error.middleware";
 import { notFoundMiddleware } from "@/middlewares/not-found.middleware";
@@ -21,6 +22,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/books", bookRouter);
+app.use("/api/ai", aiRouter);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);

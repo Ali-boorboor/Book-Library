@@ -1,8 +1,9 @@
-import { Flex } from "antd";
 import { useState } from "react";
+import { Flex, message } from "antd";
 import { AiChatInput } from "./ai-chat-input";
 import { AiChatHeader } from "./ai-chat-header";
 import { AiChatMessage } from "./ai-chat-message";
+import { aiService } from "@/services/ai.service";
 
 interface Message {
   id: number;
@@ -28,12 +29,16 @@ export function AiChat({ onClose }: AiChatProps) {
 
   const [input, setInput] = useState("");
 
-  const handleSend = () => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSend = async () => {
     const value = input.trim();
 
-    if (!value) {
+    if (!value || loading) {
       return;
     }
+
+    setInput("");
 
     setMessages((current) => [
       ...current,
@@ -44,7 +49,30 @@ export function AiChat({ onClose }: AiChatProps) {
       },
     ]);
 
-    setInput("");
+    try {
+      setLoading(true);
+
+      const response = await aiService.chat({
+        message: value,
+      });
+
+      setMessages((current) => [
+        ...current,
+        {
+          id: Date.now() + 1,
+          role: "assistant",
+          content: response.message,
+        },
+      ]);
+    } catch (error) {
+      message.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to communicate with AI",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
