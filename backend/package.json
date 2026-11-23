@@ -4,6 +4,7 @@
     "start": "bun --env-file=.env run server.ts"
   },
   "dependencies": {
+    "@openrouter/sdk": "^1.5.131",
     "cors": "^2.8.6",
     "express": "^5.3.0"
   },

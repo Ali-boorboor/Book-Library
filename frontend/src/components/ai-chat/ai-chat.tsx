@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Flex, message } from "antd";
+
+import { aiService } from "@/services/ai.service";
+
 import { AiChatInput } from "./ai-chat-input";
 import { AiChatHeader } from "./ai-chat-header";
 import { AiChatMessage } from "./ai-chat-message";
-import { aiService } from "@/services/ai.service";
 
 interface Message {
   id: number;
@@ -40,12 +42,20 @@ export function AiChat({ onClose }: AiChatProps) {
 
     setInput("");
 
+    const userMessageId = Date.now();
+    const thinkingMessageId = userMessageId + 1;
+
     setMessages((current) => [
       ...current,
       {
-        id: Date.now(),
+        id: userMessageId,
         role: "user",
         content: value,
+      },
+      {
+        id: thinkingMessageId,
+        role: "assistant",
+        content: "Thinking...",
       },
     ]);
 
@@ -57,14 +67,18 @@ export function AiChat({ onClose }: AiChatProps) {
       });
 
       setMessages((current) => [
-        ...current,
+        ...current.filter((message) => message.id !== thinkingMessageId),
         {
-          id: Date.now() + 1,
+          id: Date.now(),
           role: "assistant",
           content: response.message,
         },
       ]);
     } catch (error) {
+      setMessages((current) =>
+        current.filter((message) => message.id !== thinkingMessageId),
+      );
+
       message.error(
         error instanceof Error
           ? error.message
@@ -76,44 +90,77 @@ export function AiChat({ onClose }: AiChatProps) {
   };
 
   return (
-    <Flex
-      vertical
-      style={{
-        position: "fixed",
-        right: 24,
-        bottom: 24,
-        width: 380,
-        height: 560,
-        zIndex: 1000,
-        overflow: "hidden",
-        border: "1px solid #E8EBF2",
-        borderRadius: 20,
-        background: "#FFFFFF",
-        boxShadow: "0 24px 70px rgba(15, 23, 42, 0.16)",
-      }}
-    >
-      <AiChatHeader onClose={onClose} />
+    <>
+      <style>
+        {`
+          @keyframes ai-thinking-fade {
+            0%,
+            100% {
+              opacity: 0.35;
+            }
+
+            50% {
+              opacity: 1;
+            }
+          }
+        `}
+      </style>
 
       <Flex
         vertical
-        gap={16}
-        flex={1}
         style={{
-          padding: 20,
-          overflowY: "auto",
-          background: "#F8F9FC",
+          position: "fixed",
+          right: 24,
+          bottom: 24,
+          width: 380,
+          height: 560,
+          zIndex: 1000,
+          overflow: "hidden",
+          border: "1px solid #E8EBF2",
+          borderRadius: 20,
+          background: "#FFFFFF",
+          boxShadow: "0 24px 70px rgba(15, 23, 42, 0.16)",
         }}
       >
-        {messages.map((message) => (
-          <AiChatMessage
-            key={message.id}
-            role={message.role}
-            content={message.content}
-          />
-        ))}
-      </Flex>
+        <AiChatHeader onClose={onClose} />
 
-      <AiChatInput value={input} onChange={setInput} onSend={handleSend} />
-    </Flex>
+        <Flex
+          vertical
+          gap={16}
+          flex={1}
+          style={{
+            padding: 20,
+            overflowY: "auto",
+            background: "#F8F9FC",
+          }}
+        >
+          {messages.map((chatMessage) => {
+            const isThinking =
+              chatMessage.id === messages[messages.length - 1]?.id &&
+              chatMessage.content === "Thinking...";
+
+            return (
+              <div
+                key={chatMessage.id}
+                style={
+                  isThinking
+                    ? {
+                        animation: "ai-thinking-fade 1.4s ease-in-out infinite",
+                      }
+                    : undefined
+                }
+              >
+                <AiChatMessage
+                  role={chatMessage.role}
+                  content={chatMessage.content}
+                />
+              </div>
+            );
+          })}
+        </Flex>
+
+        <AiChatInput value={input} onChange={setInput} onSend={handleSend} />
+      </Flex>
+    </>
   );
 }
